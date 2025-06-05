@@ -1,78 +1,65 @@
-import os
-import json
 import scanpy as sc
 import pandas as pd
-import numpy as np
-import GEOparse
+import os
 
-# === CONFIGURATION === #
-GEO_ID = "GSE123456"  # Replace with actual autoimmune-related scRNA dataset
-WORKDIR = "./data"
-OUTPUT_JSON = "preprocessed_scrna.json"
+# --- CONFIGURATION PARAMETERS (OBFUSCATED) ---
+DATASET_ID = "GSE123456"  # Replace with real accession
+OUTPUT_DIR = "./output"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# === EXTRACT === #
-def extract_geo_data(geo_id: str, workdir: str) -> str:
-    os.makedirs(workdir, exist_ok=True)
-    print(f"Fetching GEO dataset: {geo_id}")
-    gse = GEOparse.get_GEO(geo=geo_id, destdir=workdir)
-    # Assume supplementary files contain raw matrix or processed h5ad files
-    # For example, download from supplementary URL or use scanpy to read directly
-    data_path = os.path.join(workdir, "matrix.h5ad")  # placeholder
-    return data_path
+# --- STEP A: EXTRACT DATA FROM PUBLIC REPOSITORY ---
+def download_scrna_data(dataset_id: str) -> sc.AnnData:
+    """
+    Download scRNA-seq dataset using GEO ID via scanpy's built-in functions.
+    """
+    print(f"Downloading dataset {dataset_id}...")
+    adata = sc.datasets.pbmc3k()  # Substitute with actual download logic if needed
+    return adata
 
-# === TRANSFORM === #
-def preprocess_scrna(filepath: str) -> sc.AnnData:
-    print(f"Reading scRNA-seq data from: {filepath}")
-    adata = sc.read(filepath)
+# --- STEP B: QUALITY CONTROL AND PREPROCESSING ---
+def preprocess_data(adata: sc.AnnData) -> sc.AnnData:
+    """
+    Performs standard QC and preprocessing:
+    - Filters cells and genes
+    - Normalizes and logs the data
+    """
+    print("Starting preprocessing...")
 
-    # Basic quality control
-    sc.pp.filter_cells(adata, min_genes=200)
-    sc.pp.filter_genes(adata, min_cells=3)
+    # Basic QC metrics
     adata.var["mt"] = adata.var_names.str.startswith("MT-")
     sc.pp.calculate_qc_metrics(adata, qc_vars=["mt"], percent_top=None, log1p=False, inplace=True)
 
-    # Filter cells
-    adata = adata[adata.obs["pct_counts_mt"] < 10, :]
+    # Filter cells and genes
+    sc.pp.filter_cells(adata, min_genes=200)
+    sc.pp.filter_genes(adata, min_cells=3)
+    adata = adata[adata.obs.pct_counts_mt < 5, :]  # Remove cells with >5% mitochondrial counts
 
-    # Normalize & log transform
+    # Normalize and log-transform
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
 
-    # Optional: high variable gene selection
-    sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
-    adata = adata[:, adata.var.highly_variable]
-
+    print("QC and normalization complete.")
     return adata
 
-# === LOAD === #
-def save_to_json(adata: sc.AnnData, output_file: str):
-    print(f"Saving preprocessed data to: {output_file}")
+# --- STEP C: OUTPUT TO CSV ---
+def export_to_csv(adata: sc.AnnData, output_dir: str) -> None:
+    """
+    Exports gene expression matrix and metadata to CSV.
+    """
+    print(f"Exporting data to {output_dir}...")
 
-    # Downsample to avoid huge JSON (e.g., first 100 cells)
-    n_cells = min(100, adata.n_obs)
-    obs_subset = adata.obs.iloc[:n_cells].to_dict(orient="records")
-    X_subset = adata.X[:n_cells].todense().tolist() if hasattr(adata.X, "todense") else adata.X[:n_cells].tolist()
+    # Expression matrix
+    expr_df = pd.DataFrame(adata.X.toarray() if hasattr(adata.X, "toarray") else adata.X,
+                           index=adata.obs_names, columns=adata.var_names)
+    expr_df.to_csv(os.path.join(output_dir, "expression_matrix.csv"))
 
-    json_data = {
-        "obs": obs_subset,
-        "var_names": adata.var_names.tolist(),
-        "X": X_subset
-    }
+    # Metadata
+    adata.obs.to_csv(os.path.join(output_dir, "metadata.csv"))
 
-    with open(output_file, "w") as f:
-        json.dump(json_data, f, indent=2)
+    print("Export complete.")
 
-# === MAIN === #
+# --- MAIN WORKFLOW ---
 if __name__ == "__main__":
-    print("Starting ETL pipeline for scRNA-seq autoimmune data")
-
-    # Extract
-    data_path = extract_geo_data(GEO_ID, WORKDIR)
-
-    # Transform
-    adata = preprocess_scrna(data_path)
-
-    # Load
-    save_to_json(adata, OUTPUT_JSON)
-
-    print("ETL step completed.")
+    adata = download_scrna_data(DATASET_ID)
+    adata = preprocess_data(adata)
+    export_to_csv(adata, OUTPUT_DIR)
