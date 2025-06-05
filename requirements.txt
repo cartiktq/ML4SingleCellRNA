@@ -3,3 +3,5 @@ anndata
 pandas
 numpy
 GEOparse
+matplotlib
+seaborn
