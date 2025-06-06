@@ -1,4 +1,4 @@
-FROM yourdockerhub/scRNA-base:latest
+FROM Docker/scRNA-base:latest
 
 COPY ../Python/preprocess_qc.py .
 
