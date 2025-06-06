@@ -1,0 +1,5 @@
+FROM yourdockerhub/scRNA-base:latest
+
+COPY biomarker_identification.py .
+
+CMD ["biomarker_identification.py"]
