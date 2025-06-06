@@ -1,0 +1,5 @@
+FROM yourdockerhub/scRNA-base:latest
+
+COPY ../Python/preprocess_qc.py .
+
+CMD ["preprocess_qc.py"]
