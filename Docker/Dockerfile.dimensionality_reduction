@@ -1,0 +1,5 @@
+FROM dockerhub/scRNA-base:latest
+
+COPY ../Python/dimensionality_reduction.py .
+
+CMD ["dimensionality_reduction.py"]
