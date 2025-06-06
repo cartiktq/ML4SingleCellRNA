@@ -1,0 +1,5 @@
+FROM yourdockerhub/scRNA-base:latest
+
+COPY visualization.py .
+
+CMD ["visualization.py"]
