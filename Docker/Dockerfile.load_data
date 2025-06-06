@@ -1,0 +1,5 @@
+FROM Docker/scRNA-base:latest
+
+COPY ../Python/load_data.py .
+
+CMD ["load_data.py"]
