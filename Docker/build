@@ -1,0 +1,11 @@
+# Base
+docker build -t yourdockerhub/scRNA-base -f Dockerfile.base .
+
+# Module-specific
+docker build -t yourdockerhub/scRNA-load-data -f Dockerfile.load_data .
+docker build -t yourdockerhub/scRNA-preprocess -f Dockerfile.preprocess_qc .
+docker build -t yourdockerhub/scRNA-reduction -f Dockerfile.dimensionality_reduction .
+docker build -t yourdockerhub/scRNA-cluster -f Dockerfile.clustering_stratification .
+docker build -t yourdockerhub/scRNA-biomarkers -f Dockerfile.biomarker_identification .
+docker build -t yourdockerhub/scRNA-trajectory -f Dockerfile.trajectory_analysis .
+docker build -t yourdockerhub/scRNA-visualize -f Dockerfile.visualization .
