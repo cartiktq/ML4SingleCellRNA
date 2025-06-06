@@ -1,0 +1,5 @@
+FROM yourdockerhub/scRNA-base:latest
+
+COPY clustering_stratification.py .
+
+CMD ["clustering_stratification.py"]
