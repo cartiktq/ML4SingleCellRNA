@@ -1,0 +1,5 @@
+FROM yourdockerhub/scRNA-base:latest
+
+COPY trajectory_analysis.py .
+
+CMD ["trajectory_analysis.py"]
